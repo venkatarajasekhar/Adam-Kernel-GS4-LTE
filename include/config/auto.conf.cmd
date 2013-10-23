@@ -344,6 +344,7 @@ deps_config := \
 	drivers/media/video/msm_wfd/Kconfig \
 	drivers/media/video/msm_vidc/Kconfig \
 	drivers/media/video/msm/Kconfig \
+	drivers/media/video/msm-bayer/Kconfig \
 	drivers/media/video/s5p-tv/Kconfig \
 	drivers/media/video/blackfin/Kconfig \
 	drivers/media/video/omap/Kconfig \

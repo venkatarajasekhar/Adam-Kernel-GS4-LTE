@@ -175,7 +175,14 @@ static LIST_HEAD(modules);
 struct list_head *kdb_modules = &modules; /* kdb needs the list of modules */
 #endif /* CONFIG_KGDB_KDB */
 
-
+#ifdef TIMA_TEST_INFRA
+void tts_debug_func_mod(void)
+{
+	/*function is never called*/
+	return;
+}
+EXPORT_SYMBOL(tts_debug_func_mod);
+#endif/*TIMA_TEST_INFRA*/
 /* Block module loading/unloading? */
 int modules_disabled = 0;
 core_param(nomodule, modules_disabled, bint, 0);
@@ -1189,7 +1196,7 @@ static int check_version(Elf_Shdr *sechdrs,
 		return 1;
 
 	/* No versions at all?  modprobe --force does this. */
-	if (versindex == 0 || !strncmp("exfat_", mod->name, 6))
+	if (versindex == 0)
 		return try_to_force_load(mod, symname) == 0;
 
 	versions = (void *) sechdrs[versindex].sh_addr;
@@ -2421,7 +2428,7 @@ static int lkmauth(Elf_Ehdr *hdr, int len)
 	mutex_lock(&lkmauth_mutex);
 	pr_warn("TIMA: lkmauth--launch the tzapp to check kernel module; module len is %d\n", len);
 
-	snprintf(app_name, MAX_APP_NAME_SIZE, "%s", "lkmauth");
+	snprintf(app_name, MAX_APP_NAME_SIZE, "%s", "tima_lkm");
     
 	if ( NULL == qhandle ) {
 		/* start the lkmauth tzapp only when it is not loaded. */
@@ -2751,7 +2758,7 @@ static int check_modinfo(struct module *mod, struct load_info *info)
 	int err;
 
 	/* This is allowed: modprobe --force will invalidate it. */
-	if (!modmagic || !strncmp("exfat_", mod->name, 6)) {
+	if (!modmagic) {
 		err = try_to_force_load(mod, "bad vermagic");
 		if (err)
 			return err;
