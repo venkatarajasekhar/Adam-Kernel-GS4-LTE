@@ -982,6 +982,8 @@ static int max77693_muic_attach_usb_type(struct max77693_muic_info *info,
 		info->cable_type = CABLE_TYPE_JIG_USB_ON_MUIC;
 		path = AP_USB_MODE;
 		break;
+	case ADC_CEA936ATYPE1_CHG:
+	case ADC_CEA936ATYPE2_CHG:
 	case ADC_OPEN:
 		if (info->cable_type == CABLE_TYPE_USB_MUIC) {
 			dev_info(info->dev, "%s: duplicated(USB)\n", __func__);
@@ -1088,10 +1090,10 @@ static int max77693_muic_attach_dock_type(struct max77693_muic_info *info,
 		msleep(40);
 
 		max77693_muic_set_charging_type(info, false);
-                
+
 		if (mdata->usb_cb && info->is_usb_ready)
 			mdata->usb_cb(USB_POWERED_HOST_ATTACHED);
-		                                                 
+
 		if (mdata->audiodock_cb)
 			mdata->audiodock_cb(MAX77693_MUIC_ATTACHED);
 
@@ -1331,10 +1333,10 @@ void otg_control(int enable)
 	 * CABLE_TYPE : CABLE_TYPE_JIG_UART_OFF_MUIC*/
 	if ( gInfo->cable_type!=CABLE_TYPE_OTG_MUIC) {
 		if ( !(gInfo->muic_data->jig_state) &&
-			gInfo->cable_type==CABLE_TYPE_NONE_MUIC){ 
+			gInfo->cable_type==CABLE_TYPE_NONE_MUIC){
 			pr_info("%s set some reg values directly"
 				"jig:(%d), CTRL1(%x), ST1(%x), ST2(%x), CABLE(%d)",
-				 __func__, 1, 0x1B, 0x3C, 0x00, 
+				 __func__, 1, 0x1B, 0x3C, 0x00,
 				 CABLE_TYPE_JIG_UART_OFF_MUIC);
 			gInfo->muic_data->jig_state(true);
 			ret = max77693_write_reg(gInfo->max77693->muic,
@@ -1658,9 +1660,9 @@ static int max77693_muic_handle_attach(struct max77693_muic_info *info,
 		}
 		break;
 	case CABLE_TYPE_AUDIODOCK_MUIC:
-		if ((adc != ADC_AUDIODOCK) || (!vbvolt)) {                  	
-        		dev_warn(info->dev, "%s: assume audiodock detach\n",
-        			__func__);
+		if ((adc != ADC_AUDIODOCK) || (!vbvolt)) {
+			dev_warn(info->dev, "%s: assume audiodock detach\n",
+				__func__);
 			dev_info(info->dev, "%s: AUDIODOCK\n", __func__);
 			info->cable_type = CABLE_TYPE_NONE_MUIC;
 			if (mdata->audiodock_cb)
@@ -1670,10 +1672,11 @@ static int max77693_muic_handle_attach(struct max77693_muic_info *info,
 				mdata->usb_cb(USB_POWERED_HOST_DETACHED);
 			ret = max77693_muic_set_charging_type(info, false);
 			max77693_muic_set_charging_type(info, false);
-	       	}
+		}
 		break;
 	case CABLE_TYPE_TA_MUIC:
-		if ((adc != ADC_OPEN) || (!vbvolt)) {
+		if (((adc != ADC_OPEN) && (adc != ADC_CEA936ATYPE1_CHG) && (adc != ADC_CEA936ATYPE2_CHG))
+			|| (!vbvolt)) {
 			dev_warn(info->dev, "%s: assume ta detach\n",
 				__func__);
 			info->cable_type = CABLE_TYPE_NONE_MUIC;
@@ -1809,38 +1812,18 @@ static int max77693_muic_handle_attach(struct max77693_muic_info *info,
 		break;
 	case ADC_CEA936ATYPE1_CHG:
 	case ADC_CEA936ATYPE2_CHG:
-	case ADC_INCOMPATIBLE1_CHG:
-	case ADC_INCOMPATIBLE2_CHG:
 	case ADC_OPEN:
 		switch (chgtyp) {
 		case CHGTYP_USB:
 		case CHGTYP_DOWNSTREAM_PORT:
-			if (adc == ADC_CEA936ATYPE1_CHG
-			    || adc == ADC_CEA936ATYPE2_CHG
-			    || adc == ADC_INCOMPATIBLE1_CHG
-			    || adc == ADC_INCOMPATIBLE2_CHG) {
-				dev_info(info->dev, "%s:TA\n", __func__);
-				if (adc == ADC_INCOMPATIBLE1_CHG
-					|| adc == ADC_INCOMPATIBLE2_CHG)
-					info->cable_type = CABLE_TYPE_INCOMPATIBLE_MUIC;
-				else
-					info->cable_type = CABLE_TYPE_TA_MUIC;
 #ifdef CONFIG_USBHUB_USB3803
-				/* setting usb hub in default mode (standby) */
-				usb3803_set_mode(USB_3803_MODE_STANDBY);
-#endif					/* CONFIG_USBHUB_USB3803 */
-				ret = max77693_muic_set_charging_type(info, !vbvolt);
-				if (ret)
-					info->cable_type = CABLE_TYPE_NONE_MUIC;
-				break;
-			}
+			/* setting usb hub in default mode (standby) */
+			usb3803_set_mode(USB_3803_MODE_STANDBY);
+#endif /* CONFIG_USBHUB_USB3803 */
 			if (chgtyp == CHGTYP_DOWNSTREAM_PORT) {
 				dev_info(info->dev, "%s, CDP(charging)\n",
 					__func__);
 				info->cable_type = CABLE_TYPE_CDP_MUIC;
-				ret = max77693_muic_set_charging_type(info, !vbvolt);
-				if(ret)
-					info->cable_type = CABLE_TYPE_NONE_MUIC;
 			}
 			if (info->cable_type == CABLE_TYPE_MHL_MUIC) {
 				dev_info(info->dev, "%s: MHL(charging)\n",
@@ -1856,14 +1839,8 @@ static int max77693_muic_handle_attach(struct max77693_muic_info *info,
 		case CHGTYP_500MA:
 		case CHGTYP_1A:
 		default:
-			if (adc == ADC_INCOMPATIBLE1_CHG
-			    || adc == ADC_INCOMPATIBLE2_CHG) {
-				dev_info(info->dev, "%s: INCOMPATIBLE TA\n", __func__);
-				info->cable_type = CABLE_TYPE_INCOMPATIBLE_MUIC;
-			} else {
-				dev_info(info->dev, "%s:TA\n", __func__);
-				info->cable_type = CABLE_TYPE_TA_MUIC;
-			}
+			dev_info(info->dev, "%s:TA\n", __func__);
+			info->cable_type = CABLE_TYPE_TA_MUIC;
 #ifdef CONFIG_USBHUB_USB3803
 			/* setting usb hub in default mode (standby) */
 			usb3803_set_mode(USB_3803_MODE_STANDBY);
@@ -1877,6 +1854,11 @@ static int max77693_muic_handle_attach(struct max77693_muic_info *info,
 	default:
 		dev_warn(info->dev, "%s: unsupported adc=0x%x\n", __func__,
 			 adc);
+		info->cable_type = CABLE_TYPE_INCOMPATIBLE_MUIC;
+
+		ret = max77693_muic_set_charging_type(info, !vbvolt);
+		if (ret)
+			info->cable_type = CABLE_TYPE_NONE_MUIC;
 		break;
 	}
 	return ret;

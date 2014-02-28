@@ -434,6 +434,10 @@ static bool sec_fg_fuelalert_process(bool is_fuel_alerted) {return true; }
 
 #if defined(CONFIG_MACH_JF_DCM)
 static const sec_bat_adc_table_data_t temp_table[] = {
+	{25893,	900},
+	{26142,	850},
+	{26427,	800},
+	{26792,	750},
 	{27120,	700},
 	{27585,	650},
 	{28110,	600},
@@ -457,6 +461,10 @@ static const sec_bat_adc_table_data_t temp_table[] = {
 };
 #elif defined(CONFIG_MACH_JACTIVE_ATT)
 static const sec_bat_adc_table_data_t temp_table[] = {
+	{25893,	900},
+	{26142,	850},
+	{26427,	800},
+	{26792,	750},
 	{27039,	700},
 	{27264,	670},
 	{27435,	650},
@@ -485,6 +493,10 @@ static const sec_bat_adc_table_data_t temp_table[] = {
 };
 #else
 static const sec_bat_adc_table_data_t temp_table[] = {
+	{25893,	900},
+	{26142,	850},
+	{26427,	800},
+	{26792,	750},
 	{27188,	700},
 	{27605,	650},
 	{28182,	600},
@@ -540,7 +552,7 @@ static int polling_time_table[] = {
 static struct battery_data_t fusion3_battery_data[] = {
 	/* SDI battery data (High voltage 4.35V) */
 	{
-		.RCOMP0 = 0x77,
+		.RCOMP0 = 0x65,
 		.RCOMP_charging = 0x70,
 		.temp_cohot = -700,
 		.temp_cocold = -4875,
@@ -881,6 +893,21 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.temp_high_recovery_lpm = 400,
 	.temp_low_threshold_lpm = -50,
 	.temp_low_recovery_lpm = 0,
+#elif defined(CONFIG_MACH_JFVE_EUR)
+	.temp_high_threshold_event = 600,
+	.temp_high_recovery_event = 400,
+	.temp_low_threshold_event = -50,
+	.temp_low_recovery_event = 0,
+
+	.temp_high_threshold_normal = 600,
+	.temp_high_recovery_normal = 400,
+	.temp_low_threshold_normal = -50,
+	.temp_low_recovery_normal = 0,
+
+	.temp_high_threshold_lpm = 600,
+	.temp_high_recovery_lpm = 400,
+	.temp_low_threshold_lpm = -50,
+	.temp_low_recovery_lpm = 0,
 #else
 	.temp_high_threshold_event = 600,
 	.temp_high_recovery_event = 400,
@@ -999,10 +1026,12 @@ __setup("androidboot.boot_recovery=", sec_bat_current_boot_mode);
 void __init msm8960_init_battery(void)
 {
 	/* FUEL_SDA/SCL setting */
+#if !defined(CONFIG_MACH_JFVE_EUR)
 	if ((system_rev > 0) && (system_rev < 6)) {
 		gpio_i2c_data_fgchg.sda_pin = GPIO_FUELGAUGE_I2C_SDA_OLD;
 		gpio_i2c_data_fgchg.scl_pin = GPIO_FUELGAUGE_I2C_SCL_OLD;
 	}
+#endif
 	platform_add_devices(
 		msm8960_battery_devices,
 		ARRAY_SIZE(msm8960_battery_devices));

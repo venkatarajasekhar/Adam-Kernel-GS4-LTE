@@ -63,6 +63,7 @@ deps_config := \
 	fs/sysfs/Kconfig \
 	fs/proc/Kconfig \
 	fs/ntfs/Kconfig \
+	fs/exfat/Kconfig \
 	fs/fat/Kconfig \
 	fs/udf/Kconfig \
 	fs/isofs/Kconfig \
@@ -88,13 +89,16 @@ deps_config := \
 	fs/ext3/Kconfig \
 	fs/ext2/Kconfig \
 	fs/Kconfig \
+	drivers/motor_msm8930/Kconfig \
 	drivers/felica/Kconfig \
-	drivers/interceptor/Kconfig \
 	drivers/irda/Kconfig \
 	drivers/barcode_emul/Kconfig \
 	drivers/motor/Kconfig \
 	drivers/sensorhub/factory/Kconfig \
 	drivers/sensorhub/Kconfig \
+	drivers/sensors/optical/Kconfig \
+	drivers/sensors/geomagnetic/Kconfig \
+	drivers/sensors/Kconfig \
 	drivers/battery/Kconfig \
 	drivers/coresight/Kconfig \
 	drivers/gud/Kconfig \
@@ -424,6 +428,7 @@ deps_config := \
 	drivers/char/Kconfig \
 	drivers/input/gameport/Kconfig \
 	drivers/input/serio/Kconfig \
+	drivers/input/misc/mpu6050/Kconfig \
 	drivers/input/misc/Kconfig \
 	drivers/input/touchscreen/Kconfig \
 	drivers/input/tablet/Kconfig \
@@ -699,6 +704,7 @@ deps_config := \
 	net/decnet/netfilter/Kconfig \
 	net/ipv6/netfilter/Kconfig \
 	net/ipv4/netfilter/Kconfig \
+	net/netfilter/interceptor/Kconfig \
 	net/netfilter/ipvs/Kconfig \
 	net/netfilter/ipset/Kconfig \
 	net/netfilter/Kconfig \
@@ -717,6 +723,7 @@ deps_config := \
 	drivers/cpufreq/Kconfig.arm \
 	drivers/cpufreq/Kconfig.x86 \
 	drivers/cpufreq/Kconfig \
+	arch/arm/mvp/Kconfig \
 	mm/Kconfig \
 	kernel/Kconfig.preempt \
 	kernel/time/Kconfig \

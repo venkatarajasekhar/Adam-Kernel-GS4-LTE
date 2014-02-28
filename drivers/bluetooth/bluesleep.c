@@ -369,8 +369,8 @@ struct uart_port *bluesleep_get_uart_port(void)
 static int bluesleep_read_proc_lpm(char *page, char **start, off_t offset,
 					int count, int *eof, void *data)
 {
-    *eof = 1;
-    return snprintf(page, count, "lpm: %u\n", has_lpm_enabled?1:0 );
+	*eof = 1;
+	return snprintf(page, count, "lpm: %u\n", has_lpm_enabled?1:0 );
 }
 
 static int bluesleep_write_proc_lpm(struct file *file, const char *buffer,
@@ -400,11 +400,11 @@ static int bluesleep_write_proc_lpm(struct file *file, const char *buffer,
 			bluesleep_start();
 		}
 	} else if (b == '2') {
-        BT_ERR("(bluesleep_write_proc_lpm) don`t control ext_wake & uart clk");
-        if(has_lpm_enabled) {
-            has_lpm_enabled = false;
-            bluesleep_abnormal_stop();
-        }
+		BT_ERR("(bluesleep_write_proc_lpm) don`t control ext_wake & uart clk");
+		if(has_lpm_enabled) {
+			has_lpm_enabled = false;
+			bluesleep_abnormal_stop();
+		}
 	}
 
 	return count;
@@ -603,25 +603,34 @@ static void bluesleep_stop_wq(struct work_struct *work)
  */
 static void bluesleep_abnormal_stop_wq(struct work_struct *work)
 {
-    BT_ERR("bluesleep_abnormal_stop_wq");
+	int ret;
 
-    if (!test_bit(BT_PROTO, &flags)) {
-        BT_ERR("(bluesleep_abnormal_stop_wq) proto is not set. Failed to stop bluesleep");
-        bsi->uport = NULL;
-        return;
-    }
+	BT_ERR("bluesleep_abnormal_stop_wq");
 
-    del_timer(&tx_timer);
-    clear_bit(BT_PROTO, &flags);
+	/* assert BT_WAKE */
+	if (bsi->has_ext_wake == 1) {
+		ret = ice_gpiox_set(bsi->ext_wake, 1);
+		if (ret)
+			BT_ERR("(bluesleep_abnormal_stop_wq) failed to set ext_wake 1.");
+	}
+	set_bit(BT_EXT_WAKE, &flags);
+	del_timer(&tx_timer);
+	clear_bit(BT_PROTO, &flags);
+
+	if (test_bit(BT_ASLEEP, &flags)) {
+		clear_bit(BT_ASLEEP, &flags);
+		hsuart_power(1);
+	}
+
+	atomic_inc(&open_count);
 
 #if BT_ENABLE_IRQ_WAKE
-    if (disable_irq_wake(bsi->host_wake_irq))
-        BT_ERR("Couldn't disable hostwake IRQ wakeup mode\n");
+	if (disable_irq_wake(bsi->host_wake_irq))
+		BT_ERR("Couldn't disable hostwake IRQ wakeup mode\n");
 #endif
-    wake_lock_timeout(&bsi->wake_lock, HZ / 2);
+	wake_lock_timeout(&bsi->wake_lock, HZ / 2);
 
-    clear_bit(BT_TXDATA, &flags);
-    bsi->uport = NULL;
+	bsi->uport = NULL;
 }
 
 /**

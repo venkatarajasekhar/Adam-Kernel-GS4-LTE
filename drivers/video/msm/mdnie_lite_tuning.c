@@ -62,8 +62,8 @@
 
 #define MAX_LUT_SIZE	256
 
-#define PAYLOAD1 mdni_tune_cmd[3]
-#define PAYLOAD2 mdni_tune_cmd[2]
+#define PAYLOAD1 mdni_tune_cmd[2]
+#define PAYLOAD2 mdni_tune_cmd[1]
 
 #define INPUT_PAYLOAD1(x) PAYLOAD1.payload = x
 #define INPUT_PAYLOAD2(x) PAYLOAD2.payload = x
@@ -71,7 +71,7 @@
 
 int play_speed_1_5;
 #if defined(CONFIG_FB_MSM_MIPI_RENESAS_TFT_VIDEO_FULL_HD_PT_PANEL)
-static int cabc = -1;
+static int cabc = 0;
 extern int mipi_samsung_cabc_onoff ( int enable );
 #endif
 
@@ -105,7 +105,6 @@ const char scenario_name[MAX_mDNIe_MODE][16] = {
 	"VT_MODE",
 	"BROWSER",
 	"eBOOK",
-	"EMAIL",
 #if defined(CONFIG_TDMB)
 	"DMB_MODE",
 	"DMB_WARM_MODE",
@@ -113,30 +112,48 @@ const char scenario_name[MAX_mDNIe_MODE][16] = {
 #endif
 };
 
+static char tune_data1[MDNIE_TUNE_FIRST_SIZE] = {0,};
+static char tune_data2[MDNIE_TUNE_SECOND_SIZE] = {0,};
+
+#if defined(CONFIG_DISPLAY_DISABLE_TEST_KEY)
+static char level1_key_enable[] = {
+	0xF0,
+	0x5A, 0x5A,
+};
+
+static char level1_key_disable[] = {
+	0xF0,
+	0xA5, 0xA5,
+};
+
+static struct dsi_cmd_desc mdni_tune_cmd[] = {
+	{DTYPE_DCS_LWRITE, 1, 0, 0, 0,
+		sizeof(level1_key_enable), level1_key_enable},
+
+	{DTYPE_DCS_LWRITE, 1, 0, 0, 0,
+		sizeof(tune_data1), tune_data1},
+	{DTYPE_DCS_LWRITE, 1, 0, 0, 0,
+		sizeof(tune_data2), tune_data2},
+
+	{DTYPE_DCS_LWRITE, 1, 0, 0, 0,
+		sizeof(level1_key_disable), level1_key_disable},
+};
+#else
 static char level1_key[] = {
 	0xF0,
 	0x5A, 0x5A,
 };
 
-static char level2_key[] = {
-	0xF1,
-	0x5A, 0x5A,
-};
-
-static char tune_data1[MDNIE_TUNE_FIRST_SIZE] = {0,};
-static char tune_data2[MDNIE_TUNE_SECOND_SIZE] = {0,};
-
 static struct dsi_cmd_desc mdni_tune_cmd[] = {
 	{DTYPE_DCS_LWRITE, 1, 0, 0, 0,
 		sizeof(level1_key), level1_key},
-	{DTYPE_DCS_LWRITE, 1, 0, 0, 0,
-		sizeof(level2_key), level2_key},
 
 	{DTYPE_DCS_LWRITE, 1, 0, 0, 0,
 		sizeof(tune_data1), tune_data1},
 	{DTYPE_DCS_LWRITE, 1, 0, 0, 0,
 		sizeof(tune_data2), tune_data2},
 };
+#endif
 
 void print_tun_data(void)
 {
@@ -494,14 +511,16 @@ void mDNIe_Set_Mode(enum Lcd_mDNIe_UI mode)
 
 	case mDNIe_eBOOK_MODE:
 		DPRINT(" = eBOOK MODE =\n");
-#if !defined(CONFIG_SUPPORT_DISPLAY_OCTA_TFT)
-		INPUT_PAYLOAD1(EBOOK_1);
-		INPUT_PAYLOAD2(EBOOK_2);
-#else
 		if (mdnie_tun_state.background == STANDARD_MODE) {
 			DPRINT(" = STANDARD MODE =\n");
 			INPUT_PAYLOAD1(STANDARD_EBOOK_1);
 			INPUT_PAYLOAD2(STANDARD_EBOOK_2);
+#if !defined(CONFIG_SUPPORT_DISPLAY_OCTA_TFT)
+		} else if (mdnie_tun_state.background == NATURAL_MODE) {
+			DPRINT(" = NATURAL MODE =\n");
+			INPUT_PAYLOAD1(NATURAL_EBOOK_1);
+			INPUT_PAYLOAD2(NATURAL_EBOOK_2);
+#endif
 		} else if (mdnie_tun_state.background == DYNAMIC_MODE) {
 			DPRINT(" = DYNAMIC MODE =\n");
 			INPUT_PAYLOAD1(DYNAMIC_EBOOK_1);
@@ -515,16 +534,7 @@ void mDNIe_Set_Mode(enum Lcd_mDNIe_UI mode)
 			INPUT_PAYLOAD1(AUTO_EBOOK_1);
 			INPUT_PAYLOAD2(AUTO_EBOOK_2);
 		}
-#endif
 		break;
-
-#if !defined(CONFIG_SUPPORT_DISPLAY_OCTA_TFT)
-	case mDNIe_EMAIL_MODE:
-		DPRINT(" = EMAIL MODE =\n");
-		INPUT_PAYLOAD1(EMAIL_1);
-		INPUT_PAYLOAD2(EMAIL_2);
-		break;
-#endif
 
 	case mDNIE_BLINE_MODE:
 		DPRINT(" = BLIND MODE =\n");
@@ -693,9 +703,7 @@ static ssize_t scenario_store(struct device *dev,
 	case SIG_MDNIE_eBOOK:
 		mdnie_tun_state.scenario = mDNIe_eBOOK_MODE;
 		break;
-	case SIG_MDNIE_EMAIL:
-		mdnie_tun_state.scenario = mDNIe_EMAIL_MODE;
-		break;
+
 #ifdef BROWSER_COLOR_TONE_SET
 	case SIG_MDNIE_BROWSER_TONE1:
 		mdnie_tun_state.scenario = mDNIe_BROWSER_TONE1;
@@ -1006,11 +1014,6 @@ static ssize_t cabc_store(struct device *dev,
 	return size;
 }
 
-int is_cabc_on ( void )
-{
-	return cabc;
-}
-
 static DEVICE_ATTR(cabc, 0664,
 			cabc_show,
 			cabc_store);
@@ -1160,12 +1163,14 @@ void coordinate_tunning(int x, int y)
 	memcpy(&DYNAMIC_UI_2[scr_wr_addr], &coordinate_data[tune_number][0], coordinate_data_size);
 	memcpy(&DYNAMIC_VIDEO_2[scr_wr_addr], &coordinate_data[tune_number][0], coordinate_data_size);
 	memcpy(&DYNAMIC_VT_2[scr_wr_addr], &coordinate_data[tune_number][0], coordinate_data_size);
+	memcpy(&DYNAMIC_EBOOK_2[scr_wr_addr], &coordinate_data[tune_number][0], coordinate_data_size);
 
 	memcpy(&STANDARD_BROWSER_2[scr_wr_addr], &coordinate_data[tune_number][0], coordinate_data_size);
 	memcpy(&STANDARD_GALLERY_2[scr_wr_addr], &coordinate_data[tune_number][0], coordinate_data_size);
 	memcpy(&STANDARD_UI_2[scr_wr_addr], &coordinate_data[tune_number][0], coordinate_data_size);
 	memcpy(&STANDARD_VIDEO_2[scr_wr_addr], &coordinate_data[tune_number][0], coordinate_data_size);
 	memcpy(&STANDARD_VT_2[scr_wr_addr], &coordinate_data[tune_number][0], coordinate_data_size);
+	memcpy(&STANDARD_EBOOK_2[scr_wr_addr], &coordinate_data[tune_number][0], coordinate_data_size);
 
 	memcpy(&AUTO_BROWSER_2[scr_wr_addr], &coordinate_data[tune_number][0], coordinate_data_size);
 	memcpy(&AUTO_CAMERA_2[scr_wr_addr], &coordinate_data[tune_number][0], coordinate_data_size);

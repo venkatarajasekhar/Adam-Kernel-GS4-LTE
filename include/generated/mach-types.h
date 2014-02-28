@@ -1016,6 +1016,7 @@ extern unsigned int __machine_arch_type;
 #define MACH_TYPE_OSLO_ELISABETH       3725
 #define MACH_TYPE_TT01                 3726
 #define MACH_TYPE_MSM8930_CDP          3727
+#define MACH_TYPE_MELIUS               3727
 #define MACH_TYPE_MSM8930_MTP          3728
 #define MACH_TYPE_MSM8930_FLUID        3729
 #define MACH_TYPE_LTU11                3730
@@ -1190,6 +1191,7 @@ extern unsigned int __machine_arch_type;
 #define MACH_TYPE_MSM8625_FFA          4166
 #define MACH_TYPE_MSM8625_EVT          4193
 #define MACH_TYPE_APQ8064_MAKO         7800
+#define MACH_TYPE_MSM8930_EVT          4558
 
 #ifdef CONFIG_ARCH_EBSA110
 # ifdef machine_arch_type
@@ -13239,6 +13241,18 @@ extern unsigned int __machine_arch_type;
 # define machine_is_msm8930_cdp()	(0)
 #endif
 
+#ifdef CONFIG_MACH_MELIUS
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type	__machine_arch_type
+# else
+#  define machine_arch_type	MACH_TYPE_MELIUS
+# endif
+# define machine_is_melius()	(machine_arch_type == MACH_TYPE_MELIUS)
+#else
+# define machine_is_melius()	(0)
+#endif
+
 #ifdef CONFIG_MACH_MSM8930_MTP
 # ifdef machine_arch_type
 #  undef machine_arch_type
@@ -15325,6 +15339,18 @@ extern unsigned int __machine_arch_type;
 # define machine_is_apq8064_mako()	(machine_arch_type == MACH_TYPE_APQ8064_MAKO)
 #else
 # define machine_is_apq8064_mako()	(0)
+#endif
+
+#ifdef CONFIG_MACH_MSM8930_EVT
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type	__machine_arch_type
+# else
+#  define machine_arch_type	MACH_TYPE_MSM8930_EVT
+# endif
+# define machine_is_msm8930_evt()	(machine_arch_type == MACH_TYPE_MSM8930_EVT)
+#else
+# define machine_is_msm8930_evt()	(0)
 #endif
 
 /*
