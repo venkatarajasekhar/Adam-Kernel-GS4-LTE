@@ -1,1 +1,1 @@
-#define UTS_RELEASE "3.4.0-Adam-2.1"
+#define UTS_RELEASE "3.4.0-Adam-2.2"
