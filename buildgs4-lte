@@ -2,9 +2,9 @@ echo "make clean"
 make clean
 echo "export ARCH=arm"
 export ARCH=arm
-echo "make VARIANT_DEFCONFIG=jf_eur_defconfig wanam_i9505_defconfig"
-make VARIANT_DEFCONFIG=jf_eur_defconfig wanam_i9505_defconfig
-echo "make"
+echo "make VARIANT_DEFCONFIG=jf_eur_defconfig selinux_defconfig wanam_i9505_defconfig"
+make VARIANT_DEFCONFIG=jf_eur_defconfig wanam_i9505_defconfig SELINUX_DEFCONFIG=selinux_defconfig
+echo "make -j4"
 make
 echo "Done!"
 
